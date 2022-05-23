@@ -26,7 +26,7 @@ macro_rules! try_or_null {
                 update_last_error(Error::from(err));
                 return std::ptr::null_mut();
             }
-        };
+        }
     };
 }
 
@@ -38,7 +38,7 @@ macro_rules! try_or_int {
                 update_last_error(Error::from(err));
                 return -1;
             }
-        };
+        }
     };
 }
 
