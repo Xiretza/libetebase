@@ -10,7 +10,10 @@ fn main() {
     if cfg!(unix) {
         // Set soname for platforms other than Windows
         const VERSION_MAJOR: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
-        println!("cargo:rustc-cdylib-link-arg=-Wl,-soname,libetebase.so.{}", VERSION_MAJOR);
+        println!(
+            "cargo:rustc-cdylib-link-arg=-Wl,-soname,libetebase.so.{}",
+            VERSION_MAJOR
+        );
     }
     match cbindgen::generate(&crate_dir) {
         Ok(gen) => gen,
@@ -23,5 +26,6 @@ fn main() {
             } => return,
             _ => panic!("{:?}", e),
         },
-    }.write_to_file("target/etebase.h");
+    }
+    .write_to_file("target/etebase.h");
 }
