@@ -4,6 +4,7 @@
 #![allow(non_camel_case_types)]
 
 use std::cell::RefCell;
+use std::convert::TryInto;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_void};
 use std::path::PathBuf;
@@ -532,10 +533,10 @@ pub unsafe extern "C" fn etebase_account_save(
     let encryption_key = if encryption_key.is_null() {
         None
     } else {
-        Some(std::slice::from_raw_parts(
-            encryption_key as *const u8,
-            encryption_key_size,
-        ))
+        let key = std::slice::from_raw_parts(encryption_key as *const u8, encryption_key_size);
+        Some(try_or_null!(key.try_into().map_err(|_| {
+            Error::ProgrammingError("Encryption key must be exactly 32 bytes long")
+        })))
     };
     let saved = try_or_null!(this.save(encryption_key));
     try_or_null!(CString::new(saved)).into_raw()
@@ -558,10 +559,10 @@ pub unsafe extern "C" fn etebase_account_restore(
     let encryption_key = if encryption_key.is_null() {
         None
     } else {
-        Some(std::slice::from_raw_parts(
-            encryption_key as *const u8,
-            encryption_key_size,
-        ))
+        let key = std::slice::from_raw_parts(encryption_key as *const u8, encryption_key_size);
+        Some(try_or_null!(key.try_into().map_err(|_| {
+            Error::ProgrammingError("Encryption key must be exactly 32 bytes long")
+        })))
     };
     Box::into_raw(Box::new(try_or_null!(Account::restore(
         client.clone(),
@@ -2321,6 +2322,9 @@ pub unsafe extern "C" fn etebase_invitation_manager_invite(
 ) -> i32 {
     let username = CStr::from_ptr(username).to_str().unwrap();
     let pubkey = std::slice::from_raw_parts(pubkey as *const u8, pubkey_size);
+    let pubkey = try_or_int!(pubkey
+        .try_into()
+        .map_err(|_| Error::ProgrammingError("Public key must be exactly 32 bytes long")));
     try_or_int!(this.invite(collection, username, pubkey, access_level));
     0
 }
@@ -2731,10 +2735,10 @@ pub unsafe extern "C" fn etebase_fs_cache_save_account(
     let encryption_key = if encryption_key.is_null() {
         None
     } else {
-        Some(std::slice::from_raw_parts(
-            encryption_key as *const u8,
-            encryption_key_size,
-        ))
+        let key = std::slice::from_raw_parts(encryption_key as *const u8, encryption_key_size);
+        Some(try_or_int!(key.try_into().map_err(|_| {
+            Error::ProgrammingError("Encryption key must be exactly 32 bytes long")
+        })))
     };
     try_or_int!(this.save_account(etebase, encryption_key));
     0
@@ -2756,10 +2760,10 @@ pub unsafe extern "C" fn etebase_fs_cache_load_account(
     let encryption_key = if encryption_key.is_null() {
         None
     } else {
-        Some(std::slice::from_raw_parts(
-            encryption_key as *const u8,
-            encryption_key_size,
-        ))
+        let key = std::slice::from_raw_parts(encryption_key as *const u8, encryption_key_size);
+        Some(try_or_null!(key.try_into().map_err(|_| {
+            Error::ProgrammingError("Encryption key must be exactly 32 bytes long")
+        })))
     };
     Box::into_raw(Box::new(try_or_null!(
         this.load_account(client, encryption_key)
